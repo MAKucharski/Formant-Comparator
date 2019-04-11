@@ -36,15 +36,14 @@ class Window(QMainWindow,QWidget):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.ui_components()
-        self.showMaximized()
+        self.load_file()
+
 
         self.show()
 
     def load_file(self):
         filename = self.open_filename_dialog()  #ścieżka do pliku audio
-        fig, (ax, ax2, ax3) = plt.subplots(3, figsize=(10, 5))
-        mngr = plt.get_current_fig_manager()
-        mngr.window.setGeometry(50, 200,1000,1000)
+        fig, (ax, ax2, ax3) = plt.subplots(3, figsize=(15, 8))
         rate, data = wavfile.read(filename) #załadowanie pliku WAVE --> zamienić na libsndfile
         print(rate)
         pygame.mixer.pre_init(rate, -16, 2, 2048) #nie działa za drugim razem
@@ -66,7 +65,9 @@ class Window(QMainWindow,QWidget):
         f = np.linspace(0, 1 / T, N)
         fft[1:] = 2 * fft[1:]  # need to take the single-sided spectrum only
 
+        ax=self.figure.add_subplot(111)
         ax.plot(time, data)
+        self.canvas.draw()
         ax2.set_xscale('log')
         ax2.set_yscale('log')
         ax2.plot(f[:N // 2], np.abs(fft)[:N // 2] * 1 / N)
@@ -83,35 +84,6 @@ class Window(QMainWindow,QWidget):
 
         currentsong.setGeometry(QRect(400, 5, 150, 50))
         print (name)
-
-    def load_file2(self):
-        filename = self.open_filename_dialog()
-        fig, (ax, ax2, ax3) = plt.subplots(3, figsize=(10, 5))
-
-        rate, data = wavfile.read(filename)
-
-        time = np.arange(0, len(data)) / rate
-
-        Ts = 1.0 / rate;
-        t = np.arange(0, 1, Ts)
-        T = t[1] - t[0]
-        N = data.size
-        fft = np.fft.fft(data)[0:int(np.floor(N / 2))] / N
-
-        f = np.linspace(0, 1 / T, N)
-        fft[1:] = 2 * fft[1:]
-
-        ax.plot(time, data)
-        ax2.set_xscale('log')
-        ax2.set_yscale('log')
-        ax2.plot(f[:N // 2], np.abs(fft)[:N // 2] * 1 / N)
-        ax3.specgram(data, Fs=rate)
-
-        ax.set(xlabel='Time[s]', ylabel='Amplitude')
-        mngr = plt.get_current_fig_manager()
-        mngr.window.setGeometry(50, 200,1000,1000)
-        plt.show()
-
 
     def open_filename_dialog(self):
         options = QFileDialog.Options()
@@ -151,18 +123,17 @@ class Window(QMainWindow,QWidget):
         unpausebutton.setIconSize(QtCore.QSize(25, 25))
         unpausebutton.clicked.connect(self.click_unpause)
 
-        openfolderbutton = QPushButton("Load File 1", self)
-        openfolderbutton.setGeometry(QRect(350, 50, 100, 35))
+        openfolderbutton = QPushButton("Load another file", self)
+        openfolderbutton.setGeometry(QRect(350, 50, 35, 35))
         openfolderbutton.clicked.connect(self.load_file)
-        openfolderbutton.clicked.connect(self.mixer_quit)
-
-        openfolderbutton2 = QPushButton("Load File 2", self)
-        openfolderbutton2.setGeometry(QRect(750, 50, 100, 35))
-        openfolderbutton2.clicked.connect(self.load_file2)
-        #openfolderbutton.clicked.connect(self.mixer_quit)
 
         self.b = QCheckBox("Loop", self)
         self.b.stateChanged.connect(self.checkbox_loop)
+
+
+        self.figure = plt.figure(figsize=(15,5))
+        self.canvas = FigureCanvas(self.figure)
+
 
     def get_position(self):
         return pygame.mixer.music.get_pos()
@@ -188,8 +159,6 @@ class Window(QMainWindow,QWidget):
         else:
             pygame.mixer.music.play(loops=0)
 
-    def mixer_quit(self):
-        pygame.mixer.quit()
 
 
 App = QApplication(sys.argv)
